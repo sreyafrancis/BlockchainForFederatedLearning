@@ -13,6 +13,30 @@ import data.extractor as dataext
 import numpy as np
 from nn import *
 
+def compute_global_model(base,updates,lrate):
+    upd = dict()
+    for x in ['h1','h2','ho','b1','b2','bo']:
+        upd[x] = np.array(base[x], copy=True)
+    kn = len(updates)
+    for client in updates.keys():
+        for x in ['h1','h2','ho','b1','b2','bo']:
+            model = updates[client].update
+            # upd[x] += (lrate/model['size'])*(model[x]+base[x])
+            upd[x] += (lrate/kn)*(model[x]+base[x])
+    upd["size"] = 0
+    reset()
+    dataset = dataext.load_data("data/mnist.d")
+    worker = NNWorker(None,
+        None,
+        dataset['test_img'],
+        dataset['test_lab'],
+        0,
+        "validation")
+    worker.build(upd)
+    accuracy = worker.evaluate()
+    worker.close()
+    return accuracy,upd
+
 class Block:
     def __init__(self,miner,index,basemodel,accuracy,updates,timestamp=time.time()):
         self.index = index
