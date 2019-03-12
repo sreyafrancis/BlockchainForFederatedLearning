@@ -21,7 +21,6 @@ def compute_global_model(base,updates,lrate):
     for client in updates.keys():
         for x in ['h1','h2','ho','b1','b2','bo']:
             model = updates[client].update
-            # upd[x] += (lrate/model['size'])*(model[x]+base[x])
             upd[x] += (lrate/kn)*(model[x]+base[x])
     upd["size"] = 0
     reset()
