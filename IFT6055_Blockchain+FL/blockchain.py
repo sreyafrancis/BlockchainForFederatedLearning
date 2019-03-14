@@ -40,6 +40,47 @@ def compute_global_model(base,updates,lrate):
 def find_len(text,strk):
     return text.find(strk),len(strk)
 
+class Update:
+    def __init__(self,client,baseindex,update,datasize,computing_time,timestamp=time.time()):
+        self.timestamp = timestamp
+        self.baseindex = baseindex
+        self.update = update
+        self.client = client
+        self.datasize = datasize
+        self.computing_time = computing_time
+
+    @staticmethod
+    def from_string(updstr):
+        i,l = find_len(updstr,"'timestamp':")
+        i2,l2 = find_len(updstr,"'baseindex':")
+        i3,l3 = find_len(updstr,"'update': ")
+        i4,l4 = find_len(updstr,"'client':")
+        i5,l5 = find_len(updstr,"'datasize':")
+        i6,l6 = find_len(updstr,"'computing_time':")
+        baseindex = int(updstr[i2+l2:i3].replace(",",'').replace(" ",""))
+        update = dict(pickle.loads(codecs.decode(updstr[i3+l3:i4-1].encode(), "base64")))
+        timestamp = float(updstr[i+l:i2].replace(",",'').replace(" ",""))
+        client = updstr[i4+l4:i5].replace(",",'').replace(" ","")
+        datasize = int(updstr[i5+l5:i6].replace(",",'').replace(" ",""))
+        computing_time = float(updstr[i6+l6:].replace(",",'').replace(" ",""))
+        return Update(client,baseindex,update,datasize,computing_time,timestamp)
+
+
+    def __str__(self):
+        return "'timestamp': {timestamp},\
+            'baseindex': {baseindex},\
+            'update': {update},\
+            'client': {client},\
+            'datasize': {datasize},\
+            'computing_time': {computing_time}".format(
+                timestamp = self.timestamp,
+                baseindex = self.baseindex,
+                update = codecs.encode(pickle.dumps(sorted(self.update.items())), "base64").decode(),
+                client = self.client,
+                datasize = self.datasize,
+                computing_time = self.computing_time
+            )
+
 class Block:
     def __init__(self,miner,index,basemodel,accuracy,updates,timestamp=time.time()):
         self.index = index
