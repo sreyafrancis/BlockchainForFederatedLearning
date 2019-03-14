@@ -36,6 +36,9 @@ def compute_global_model(base,updates,lrate):
     worker.close()
     return accuracy,upd
 
+def find_len(text,strk):
+    return text.find(strk),len(strk)
+
 class Block:
     def __init__(self,miner,index,basemodel,accuracy,updates,timestamp=time.time()):
         self.index = index
