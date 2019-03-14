@@ -13,6 +13,7 @@ import data.extractor as dataext
 import numpy as np
 from nn import *
 
+#Based on delta values received from n users, global model is computed
 def compute_global_model(base,updates,lrate):
     upd = dict()
     for x in ['h1','h2','ho','b1','b2','bo']:
