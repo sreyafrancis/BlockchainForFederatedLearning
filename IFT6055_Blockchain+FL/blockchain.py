@@ -1,3 +1,8 @@
+"""
+ - Blockchain for Federated Learning -
+   Blockchain script 
+"""
+
 import hashlib
 import json
 import time
@@ -9,27 +14,33 @@ import random
 from threading import Thread, Event
 import pickle
 import codecs
-import data.extractor as dataext
+import data.federated_data_extractor as dataext
 import numpy as np
-from nn import *
+from federatedlearner import *
 
-#Based on delta values received from n users, global model is computed
+
 def compute_global_model(base,updates,lrate):
+
+    '''
+    Function to compute the global model based on the client 
+    updates received per round
+    '''
+
     upd = dict()
-    for x in ['h1','h2','ho','b1','b2','bo']:
+    for x in ['w1','w2','wo','b1','b2','bo']:
         upd[x] = np.array(base[x], copy=True)
-    kn = len(updates)
+    number_of_clients = len(updates)
     for client in updates.keys():
-        for x in ['h1','h2','ho','b1','b2','bo']:
+        for x in ['w1','w2','wo','b1','b2','bo']:
             model = updates[client].update
-            upd[x] += (lrate/kn)*(model[x]+base[x])
+            upd[x] += (lrate/number_of_clients)*(model[x]+base[x])
     upd["size"] = 0
     reset()
     dataset = dataext.load_data("data/mnist.d")
     worker = NNWorker(None,
         None,
-        dataset['test_img'],
-        dataset['test_lab'],
+        dataset['test_images'],
+        dataset['test_labels'],
         0,
         "validation")
     worker.build(upd)
@@ -38,10 +49,19 @@ def compute_global_model(base,updates,lrate):
     return accuracy,upd
 
 def find_len(text,strk):
+
+    ''' 
+    Function to find the specified string in the text and return its starting position 
+    as well as length/last_index
+    '''
     return text.find(strk),len(strk)
 
 class Update:
     def __init__(self,client,baseindex,update,datasize,computing_time,timestamp=time.time()):
+
+        ''' 
+        Function to initialize the update string parameters
+        '''
         self.timestamp = timestamp
         self.baseindex = baseindex
         self.update = update
@@ -50,23 +70,31 @@ class Update:
         self.computing_time = computing_time
 
     @staticmethod
-    def from_string(updstr):
-        i,l = find_len(updstr,"'timestamp':")
-        i2,l2 = find_len(updstr,"'baseindex':")
-        i3,l3 = find_len(updstr,"'update': ")
-        i4,l4 = find_len(updstr,"'client':")
-        i5,l5 = find_len(updstr,"'datasize':")
-        i6,l6 = find_len(updstr,"'computing_time':")
-        baseindex = int(updstr[i2+l2:i3].replace(",",'').replace(" ",""))
-        update = dict(pickle.loads(codecs.decode(updstr[i3+l3:i4-1].encode(), "base64")))
-        timestamp = float(updstr[i+l:i2].replace(",",'').replace(" ",""))
-        client = updstr[i4+l4:i5].replace(",",'').replace(" ","")
-        datasize = int(updstr[i5+l5:i6].replace(",",'').replace(" ",""))
-        computing_time = float(updstr[i6+l6:].replace(",",'').replace(" ",""))
+    def from_string(metadata):
+
+        ''' 
+        Function to get the update string values
+        '''
+        i,l = find_len(metadata,"'timestamp':")
+        i2,l2 = find_len(metadata,"'baseindex':")
+        i3,l3 = find_len(metadata,"'update': ")
+        i4,l4 = find_len(metadata,"'client':")
+        i5,l5 = find_len(metadata,"'datasize':")
+        i6,l6 = find_len(metadata,"'computing_time':")
+        baseindex = int(metadata[i2+l2:i3].replace(",",'').replace(" ",""))
+        update = dict(pickle.loads(codecs.decode(metadata[i3+l3:i4-1].encode(), "base64")))
+        timestamp = float(metadata[i+l:i2].replace(",",'').replace(" ",""))
+        client = metadata[i4+l4:i5].replace(",",'').replace(" ","")
+        datasize = int(metadata[i5+l5:i6].replace(",",'').replace(" ",""))
+        computing_time = float(metadata[i6+l6:].replace(",",'').replace(" ",""))
         return Update(client,baseindex,update,datasize,computing_time,timestamp)
 
 
     def __str__(self):
+
+        ''' 
+        Function to return the update string values in the required format
+        '''
         return "'timestamp': {timestamp},\
             'baseindex': {baseindex},\
             'update': {update},\
@@ -81,8 +109,13 @@ class Update:
                 computing_time = self.computing_time
             )
 
+
 class Block:
     def __init__(self,miner,index,basemodel,accuracy,updates,timestamp=time.time()):
+
+        ''' 
+        Function to initialize the update string parameters per created block
+        '''
         self.index = index
         self.miner = miner
         self.timestamp = timestamp
@@ -91,30 +124,37 @@ class Block:
         self.updates = updates
 
     @staticmethod
-    def from_string(updstr):
-        i,l = find_len(updstr,"'timestamp':")
-        i2,l2 = find_len(updstr,"'basemodel': ")
-        i3,l3 = find_len(updstr,"'index':")
-        i4,l4 = find_len(updstr,"'miner':")
-        i5,l5 = find_len(updstr,"'accuracy':")
-        i6,l6 = find_len(updstr,"'updates':")
-        i9,l9 = find_len(updstr,"'updates_size':")
-        index = int(updstr[i3+l3:i4].replace(",",'').replace(" ",""))
-        miner = updstr[i4+l4:i].replace(",",'').replace(" ","")
-        timestamp = float(updstr[i+l:i2].replace(",",'').replace(" ",""))
-        basemodel = dict(pickle.loads(codecs.decode(updstr[i2+l2:i5-1].encode(), "base64")))
-        accuracy = float(updstr[i5+l5:i6].replace(",",'').replace(" ",""))
-        su = updstr[i6+l6:i9]
+    def from_string(metadata):
+
+        ''' 
+        Function to get the update string values per block
+        '''
+        i,l = find_len(metadata,"'timestamp':")
+        i2,l2 = find_len(metadata,"'basemodel': ")
+        i3,l3 = find_len(metadata,"'index':")
+        i4,l4 = find_len(metadata,"'miner':")
+        i5,l5 = find_len(metadata,"'accuracy':")
+        i6,l6 = find_len(metadata,"'updates':")
+        i9,l9 = find_len(metadata,"'updates_size':")
+        index = int(metadata[i3+l3:i4].replace(",",'').replace(" ",""))
+        miner = metadata[i4+l4:i].replace(",",'').replace(" ","")
+        timestamp = float(metadata[i+l:i2].replace(",",'').replace(" ",""))
+        basemodel = dict(pickle.loads(codecs.decode(metadata[i2+l2:i5-1].encode(), "base64")))
+        accuracy = float(metadata[i5+l5:i6].replace(",",'').replace(" ",""))
+        su = metadata[i6+l6:i9]
         su = su[:su.rfind("]")+1]
         updates = dict()
         for x in json.loads(su):
             isep,lsep = find_len(x,"@|!|@")
-            # print(x[:isep])
             updates[x[:isep]] = Update.from_string(x[isep+lsep:])
-        updates_size = int(updstr[i9+l9:].replace(",",'').replace(" ",""))
+        updates_size = int(metadata[i9+l9:].replace(",",'').replace(" ",""))
         return Block(miner,index,basemodel,accuracy,updates,timestamp)
 
     def __str__(self):
+
+        ''' 
+        Function to return the update string values in the required format per block
+        '''
         return "'index': {index},\
             'miner': {miner},\
             'timestamp': {timestamp},\
@@ -142,7 +182,7 @@ class Blockchain(object):
         self.current_updates = dict()
         self.update_limit = update_limit
         self.time_limit = time_limit
-        # Create the genesis block
+        
         if gen:
             genesis,hgenesis = self.make_block(base_model=base_model,previous_hash=1)
             self.store_block(genesis,hgenesis)
@@ -154,7 +194,6 @@ class Blockchain(object):
         parsed_url = urlparse(address)
         self.nodes.add(parsed_url.netloc)
         print("Registered node",address)
-        # print(self.nodes)
 
     def make_block(self,previous_hash=None,base_model=None):
         accuracy = 0
@@ -180,7 +219,6 @@ class Blockchain(object):
             accuracy = accuracy,
             updates = self.current_updates
             )
-        # print(accuracy)
         hashblock = {
             'index':index,
             'hash': self.hash(str(block)),
@@ -197,7 +235,7 @@ class Blockchain(object):
 
     def store_block(self,block,hashblock):
         if self.curblock:
-            with open("blocks/b"+str(self.curblock.index)+".block","wb") as f:
+            with open("blocks/federated_model"+str(self.curblock.index)+".block","wb") as f:
                 pickle.dump(self.curblock,f)
         self.curblock = block
         self.hashchain.append(hashblock)
@@ -273,7 +311,6 @@ class Blockchain(object):
             if response.status_code == 200:
                 length = response.json()['length']
                 chain = response.json()['chain']
-                # print(node,length,max_length,self.valid_chain(chain))
                 if length>max_length and self.valid_chain(chain):
                     max_length = length
                     new_chain = chain
