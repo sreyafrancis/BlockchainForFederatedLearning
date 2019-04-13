@@ -65,7 +65,7 @@ this should start federated learning on the generated federated datasets on bloc
 Retrieving the models
 ----------------------
 
-Once you've finished training, you can get the aggregated globally updated model  `federated_modelx.block` per round from the `blocks` folder.
+Once you've finished training, you can get the aggregated globally updated model  `federated_modelx.block` per round from the `src/blocks` folder.
 
     
  
