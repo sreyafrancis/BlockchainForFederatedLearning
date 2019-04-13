@@ -40,6 +40,8 @@ packages:
    `ItsDangerous==1.1.0`
    `tensorflow==1.11.0`
    
+These are specified in the `src/packages_to_install.txt` file.
+   
 This project was built using Python3 but may work with Python2 given a few 
 minor tweaks.
 
