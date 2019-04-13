@@ -59,8 +59,13 @@ run the following bash script:
 
     ./Run_BlockFL.sh
 
-Assuming you've installed all `dependencies` and everything else successfully 
+Assuming you've installed all `dependencies` and everything else successfully,
 this should start federated learning on the generated federated datasets on blockchain.
+
+Retrieving the models
+----------------------
+
+Once you've finished training, you can get the globally updated model aggregates `federated_modelx.block` per round from the `blocks` folder.
 
     
  
