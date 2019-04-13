@@ -40,3 +40,8 @@ packages:
 `tensorflow==1.11.0`
 This project was built using Python3 but may work with Python2 given a few 
 minor tweaks.
+
+Preprocessing
+-------------
+The next step is to build the federated dataset to do federating learning on. You can prepare it by running this script:
+   python federated_data_extractor.py
