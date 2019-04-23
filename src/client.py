@@ -82,21 +82,23 @@ class Client:
         ''' 
         Function to post client update details to blockchain
         '''
+	
         requests.post('http://{node}/transactions/new'.format(node=self.miner),
-            json={
+            json = {
                 'client': self.id,
                 'baseindex': baseindex,
                 'update': codecs.encode(pickle.dumps(sorted(update.items())), "base64").decode(),
                 'datasize': len(self.dataset['train_images']),
                 'computing_time': cmp_time
             })
-
-    def work(self,elimit):
+       
+    def work(self,device_id,elimit):
         ''' 
         Function to check the status of mining and wait accordingly to output 
         the final accuracy values 
         '''
         last_model = -1
+        
         for i in range(elimit):
             wait = True
             while wait:
@@ -112,11 +114,15 @@ class Client:
             last_model = baseindex
             model = client.get_model(hblock)
             update,accuracy,cmp_time = client.update_model(model,10)
-            print("Accuracy local update:",accuracy)
+            with open("clients/device"+str(device_id)+"_model_v"+str(i)+".block","wb") as f:
+                pickle.dump(update,f)
+		#j = j+1
+            print("Accuracy local update---------"+str(device_id)+"--------------:",accuracy)
             client.send_update(update,cmp_time,baseindex)
             
 
 if __name__ == '__main__':
+    
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument('-m', '--miner', default='127.0.0.1:5000', help='Address of miner')
@@ -126,6 +132,9 @@ if __name__ == '__main__':
     client = Client(args.miner,args.dataset)
     print("--------------")
     print(client.id," Dataset info:")
-    dataext.get_dataset_details(client.dataset)
+    Data_size, Number_of_classes = dataext.get_dataset_details(client.dataset)
     print("--------------")
-    client.work(args.epochs)
+    device_id = client.id[:2]
+    print(device_id,"device_id")
+    print("--------------")
+    client.work(device_id, args.epochs)
