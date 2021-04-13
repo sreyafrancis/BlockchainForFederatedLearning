@@ -3,8 +3,8 @@ Decentralization of Artificial Intelligence with federated learning on Blockchai
 
 This repo contains the code and data for doing federated learning on MNIST dataset on Blockchain.
 
-IEEE Paper
-------------
+IEEE Paper - Record and reward federated learning contributions with blockchain
+-----------------------------------------------------------------------------------
 
 https://ieeexplore.ieee.org/document/8945913
 
